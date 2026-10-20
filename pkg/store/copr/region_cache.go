@@ -46,6 +46,10 @@ type bucketSplitFallbackInfo struct {
 	bucketEnd   []byte
 
 	remainingRangeCount int
+
+	// bucketVersion records the region bucket version when a split fallback
+	// occurs, so stale bucket metadata after a region split is diagnosable.
+	bucketVersion uint64
 }
 
 // String renders the split-fallback info for structured logs.
@@ -548,6 +552,7 @@ func (l *LocationKeyRanges) splitKeyRangesByBuckets(ctx context.Context) ([]*Loc
 			r := ranges.At(0)
 			return []*LocationKeyRanges{l}, &bucketSplitFallbackInfo{
 				reason:              "range_start_outside_location",
+				bucketVersion:       l.getBucketVersion(),
 				startKey:            startKey,
 				endKey:              r.EndKey,
 				remainingRangeCount: ranges.Len(),
@@ -603,6 +608,7 @@ func (l *LocationKeyRanges) splitKeyRangesByBuckets(ctx context.Context) ([]*Loc
 			if i == 0 {
 				return []*LocationKeyRanges{l}, &bucketSplitFallbackInfo{
 					reason:              "bucket_not_contain_start_no_progress",
+					bucketVersion:       l.getBucketVersion(),
 					startKey:            r.StartKey,
 					endKey:              r.EndKey,
 					bucketStart:         bucket.StartKey,
